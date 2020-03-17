@@ -15,5 +15,10 @@
         /// </summary>
         public int Amount { get; set; }
 
+        public override string ToString()
+        {
+            return $"{Amount}*{CoinValue}";
+        }
+
     }
 }

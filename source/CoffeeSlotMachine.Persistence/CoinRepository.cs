@@ -14,5 +14,15 @@ namespace CoffeeSlotMachine.Persistence
             _dbContext = dbContext;
         }
 
+        public void AddCoin(int coinValue)
+        {
+            var coin = _dbContext.Coins
+                            .Where(c => c.CoinValue == coinValue)
+                            .SingleOrDefault();
+
+            coin.Amount++;
+            _dbContext.SaveChanges();
+        }
+        public IEnumerable<Coin> GetCoinDepot() => _dbContext.Coins.OrderByDescending(c => c.CoinValue);
     }
 }

@@ -3,6 +3,8 @@ using CoffeeSlotMachine.Core.Entities;
 using CoffeeSlotMachine.Persistence;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 namespace CoffeeSlotMachine.Core.Logic
 {
@@ -30,10 +32,13 @@ namespace CoffeeSlotMachine.Core.Logic
         /// Gibt alle Produkte sortiert nach Namen zurück
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<Product> GetProducts()
-        {
-            throw new NotImplementedException();
-        }
+        public IEnumerable<Product> GetProducts() => _productRepository.GetAllProducts();
+        /// <summary>
+        /// Gibt den aktuellen Inhalt der Kasse, sortiert nach Münzwert absteigend zurück
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<Coin> GetCoinDepot() => _coinRepository.GetCoinDepot();
+
 
         /// <summary>
         /// Eine Bestellung wird für das Produkt angelegt.
@@ -41,9 +46,17 @@ namespace CoffeeSlotMachine.Core.Logic
         /// <param name="product"></param>
         public Order OrderCoffee(Product product)
         {
-            throw new NotImplementedException();
+            if (GetProducts().Contains(product))
+            {
+                Order newOrder = new Order(product);
+                _orderRepository.AddNewOrder(newOrder);
+                return newOrder;
+            }
+            else
+            {
+                throw new ArgumentException("Produkt nicht verfügbar");
+            }
         }
-
         /// <summary>
         /// Münze einwerfen. 
         /// Wurde zumindest der Produktpreis eingeworfen, Münzen in Depot übernehmen
@@ -52,16 +65,17 @@ namespace CoffeeSlotMachine.Core.Logic
         /// <returns>true, wenn die Bestellung abgeschlossen ist</returns>
         public bool InsertCoin(Order order, int coinValue)
         {
-            throw new NotImplementedException();
-        }
+            _coinRepository.AddCoin(coinValue);
+            bool isFinsihed = order.InsertCoin(coinValue);
 
-        /// <summary>
-        /// Gibt den aktuellen Inhalt der Kasse, sortiert nach Münzwert absteigend zurück
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerable<Coin> GetCoinDepot()
-        {
-            throw new NotImplementedException();
+            if (isFinsihed)
+            {
+                order.FinishPayment(_dbContext.Coins.ToArray());
+                _orderRepository.UpdateOrder(order);
+                _dbContext.SaveChanges();
+            }
+
+            return isFinsihed;
         }
 
 
@@ -71,18 +85,29 @@ namespace CoffeeSlotMachine.Core.Logic
         /// <returns></returns>
         public string GetCoinDepotString()
         {
-            throw new NotImplementedException();
-        }
+            StringBuilder sb = new StringBuilder();
+            Coin[] coins = _coinRepository.GetCoinDepot()
+                                          .OrderByDescending(c => c.CoinValue)
+                                          .ToArray();
 
+            for (int i = 0; i < coins.Length; i++)
+            {
+                sb.Append(coins[i].ToString());
+
+                if (i + 1 < coins.Length)
+                    sb.Append(" + ");
+            }
+
+            return sb.ToString();
+        }
         /// <summary>
         /// Liefert alle Orders inkl. der Produkte zurück
         /// </summary>
         /// <returns></returns>
         public IEnumerable<Order> GetAllOrdersWithProduct()
         {
-            throw new NotImplementedException();
+            return _orderRepository.GetAllWithProduct();
         }
-
         /// <summary>
         /// IDisposable:
         ///
